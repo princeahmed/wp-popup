@@ -1,159 +1,129 @@
-const editor = grapesjs.init({
-    // Indicate where to init the editor. You can also pass an HTMLElement
-    container: '#gjs',
-    // Get the content for the canvas directly from the element
-    // As an alternative we could use: `components: '<h1>Hello World Component!</h1>'`,
-    fromElement: true,
-    // Size of the editor
-    height: '500px',
-    width: 'auto',
-    layerManager: {
-        appendTo: '.layers-container'
-    },
-    // Avoid any default panel
-    // We define a default panel as a sidebar to contain layers
-    panels: {
-        defaults: [
-            {
-                id: 'layers',
-                el: '.panel__right',
-                // Make the panel resizable
-                resizable: {
-                    maxDim: 350,
-                    minDim: 200,
-                    tc: 0, // Top handler
-                    cl: 1, // Left handler
-                    cr: 0, // Right handler
-                    bc: 0, // Bottom handler
-                    // Being a flex child we need to change `flex-basis` property
-                    // instead of the `width` (default)
-                    keyWidth: 'flex-basis',
-                },
-            },
-            {
-                id: 'panel-switcher',
-                el: '.panel__switcher',
-                buttons: [{
-                    id: 'show-layers',
-                    active: true,
-                    label: 'Layers',
-                    command: 'show-layers',
-                    togglable: false,
-                }, {
-                    id: 'show-blocks',
-                    active: false,
-                    label: 'Blocks',
-                    command: 'show-blocks',
-                    togglable: false,
-                }],
+(function ($) {
+
+    $(document).ready(function () {
+
+        var editor = grapesjs.init({
+
+            container: '#gjs',
+
+            fromElement: true,
+
+            height: '500px',
+            width: 'auto',
+            // canvas: {
+            //     styles: wpPopup.editorStyles
+            // },
+
+            // storageManager: {
+            //
+            //     id: `gjs-popup-${wpPopup.popupId}`,
+            //     type: 'remote',
+            //     autosave: true,
+            //     autoload: true,
+            //     stepsBeforeSave: 1,
+            //     storeComponents: true,
+            //     storeStyles: true,
+            //     storeHtml: true,
+            //     storeCss: true,
+            //     urlStore: wpPopup.storeUrl,
+            //     urlLoad: wpPopup.loadUrl,
+            //     params: {},
+            //     headers: {},
+            // },
+
+            plugins: ['gjs-preset-webpage'],
+
+        });
+
+        //Add Settings Trait to the style manager tab
+        var pn = editor.Panels;
+
+        var openTmBtn = pn.getButton('views', 'open-tm');
+        openTmBtn && openTmBtn.set('active', 1);
+
+        var openSm = pn.getButton('views', 'open-sm');
+        openSm && openSm.set('active', 1);
+
+        var traitsSector = $('<div class="gjs-sm-sector no-select">' +
+            '<div class="gjs-sm-title"><span class="icon-settings fa fa-cog"></span> Setting </div>' +
+            '<div class="gjs-sm-properties" style="display: none;"></div></div>');
+
+        var traitsProps = traitsSector.find('.gjs-sm-properties');
+        traitsProps.append($('.gjs-trt-traits'));
+
+        $('.gjs-sm-sectors').before(traitsSector);
+
+        traitsSector.find('.gjs-sm-title').on('click', function () {
+            var traitStyle = traitsProps.get(0).style;
+            var hidden = traitStyle.display == 'none';
+            if (hidden) {
+                traitStyle.display = 'block';
+            } else {
+                traitStyle.display = 'none';
             }
-        ]
-    },
+        });
 
-    blockManager: {
-        appendTo: '#blocks',
-        blocks: [
-            {
-                id: 'section', // id is mandatory
-                label: '<div class="block-label"><i class="fa fa-2x fa-square d-block"></i> <span class="label-text">Section</span></div>', // You can use HTML/SVG inside labels
-                attributes: {class: 'gjs-block-section'},
-                content: `<section class="my-section">
-                      <h1>This is a simple title</h1>
-                      <div>This is just a Lorem text: Lorem ipsum dolor sit amet</div>
-                    </section>`,
-            }, {
-                id: 'text',
-                label: '<div class="block-label"><i class="fa fa-2x fa-font d-block"></i> <span class="label-text">Text</span></div>',
-                content: '<div data-gjs-type="text">Insert your text here</div>',
-            }, {
-                id: 'image',
-                label: '<div class="block-label"><i class="fa fa-2x fa-image d-block"></i> <span class="label-text">Image</span></div>',
-                // Select the component once it's dropped
-                select: true,
-                // You can pass components as a JSON instead of a simple HTML string,
-                // in this case we also use a defined component type `image`
-                content: {type: 'image'},
-                // This triggers `active` event on dropped components and the `image`
-                // reacts by opening the AssetManager
-                activate: true,
-            }
-        ]
-    },
 
-    storageManager: {
-        id: 'gjs-',
-        type: 'remote',
-        autosave: true,
-        autoload: true,
-        stepsBeforeSave: 10,
-        storeComponents: true,
-        storeStyles: true,
-        storeHtml: true,
-        storeCss: true,
-        urlStore: '<?php echo SITE_URL; ?>event?type=store&campaign_id=<?php echo $data->notification->campaign_id; ?>&notification_id=<?php echo $data->notification->notification_id; ?>',
-        urlLoad: '<?php echo SITE_URL; ?>event?type=load&campaign_id=<?php echo $data->notification->campaign_id; ?>&notification_id=<?php echo $data->notification->notification_id; ?>',
-        params: {},
-        headers: {},
-    }
+        //Add Video trait
+        var domComps = editor.DomComponents;
 
-});
+        var dType = domComps.getType('video');
+        var dModel = dType.model;
+        var dView = dType.view;
 
-//Panels
-editor.Panels.addPanel({
-    id: 'panel-top',
-    el: '.panel__top',
-});
+        domComps.addType('video', {
+            model: dModel.extend(
+                {
+                    init() {
+                        dModel.prototype.init.apply(this, arguments);
+                        this.listenTo(this, 'change:provider', this.updateTypeTraits);
+                        var typeTrait = this.get('traits').find(el => el.get('name') == 'type');
+                        if (!typeTrait) {
+                            typeTrait = this.get('traits').add({
+                                type: 'select',
+                                label: 'Data',
+                                name: 'type',
+                                options: ['myoptions'],
+                                changeProp: 1,
+                            });
+                        }
+                    },
 
-editor.Panels.addPanel({
-    id: 'basic-actions',
-    el: '.panel__basic-actions',
-    buttons: [
-        {
-            id: 'save',
-            label: '<span class="btn btn-success btn-sm">Save</span>',
-            command: 'save-db',
-        }
-    ]
-});
+                    updateTraits() {
+                        var prov = this.get('provider');
+                        var traits = this.getSourceTraits();
 
-// Add the command
-editor.Commands.add('save-db', {
-    run: function (editor, sender) {
-        sender && sender.set('active');
-        editor.store();
-    }
-});
+                        switch (prov) {
+                            case 'yt':
+                            case 'ytnc':
+                                this.set('tagName', 'iframe');
+                                traits = this.getYoutubeTraits();
+                                break;
+                            case 'vi':
+                                this.set('tagName', 'iframe');
+                                traits = this.getVimeoTraits();
+                                break;
+                            default:
+                                this.set('tagName', 'video');
+                        }
 
-editor.Commands.add('show-layers', {
-    getRowEl(editor) {
-        return editor.getContainer().closest('.editor-row');
-    },
-    getLayersEl(row) {
-        return row.querySelector('.layers-container')
-    },
-    run(editor, sender) {
-        const lmEl = this.getLayersEl(this.getRowEl(editor));
-        lmEl.style.display = '';
-    },
-    stop(editor, sender) {
-        const lmEl = this.getLayersEl(this.getRowEl(editor));
-        lmEl.style.display = 'none';
-    },
-});
+                        traits.push({
+                            type: 'select',
+                            label: 'Data',
+                            name: 'type',
+                            options: ['myoptions'],
+                            changeProp: 1,
+                        });
 
-editor.Commands.add('show-blocks', {
-    getRowEl(editor) {
-        return editor.getContainer().closest('.editor-row');
-    },
-    getLayersEl(row) {
-        return row.querySelector('#blocks')
-    },
-    run(editor, sender) {
-        const lmEl = this.getLayersEl(this.getRowEl(editor));
-        lmEl.style.display = '';
-    },
-    stop(editor, sender) {
-        const lmEl = this.getLayersEl(this.getRowEl(editor));
-        lmEl.style.display = 'none';
-    },
-});
+                        this.loadTraits(traits);
+
+                        this.em.trigger('component:toggled');
+                    },
+                }),
+            view: dView,
+        });
+
+
+    });
+
+})(jQuery);

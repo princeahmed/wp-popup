@@ -30,22 +30,14 @@ final class WP_Popup {
 	protected static $instance = null;
 
 	public function __construct() {
-		register_activation_hook( __FILE__, [ $this, 'install' ] );
-		add_action( 'plugins_loaded', [ $this, 'let_the_journey_begin' ] );
-	}
 
-	function install() {
-		include_once dirname( __FILE__ ) . '/includes/class-install.php';
-		call_user_func( [ 'WP_Popup_Install', 'activate' ] );
-	}
-
-	function let_the_journey_begin() {
 		if ( $this->check_environment() ) {
 			$this->define_constants();
 			$this->includes();
 			$this->init_hooks();
-			do_action( 'wp_radio_updater_loaded' );
+			do_action( 'wp_popup_loaded' );
 		}
+
 	}
 
 	function check_environment() {
@@ -96,15 +88,16 @@ final class WP_Popup {
 	function includes() {
 
 		//core includes
+		include_once WP_POPUP_INCLUDES . '/class-install.php';
+		include_once WP_POPUP_INCLUDES . '/prince-settings/prince-loader.php';
 		include_once WP_POPUP_INCLUDES . '/class-cpt.php';
 		include_once WP_POPUP_INCLUDES . '/functions.php';
-		include_once WP_POPUP_INCLUDES . '/prince-settings/prince-loader.php';
 		include_once WP_POPUP_INCLUDES . '/class-enqueue.php';
 
 		//admin includes
         if(is_admin()){
-	        include_once WP_POPUP_INCLUDES . '/class-admin.php';
-	        include_once WP_POPUP_INCLUDES . '/class-metabox.php';
+	        include_once WP_POPUP_INCLUDES . '/admin/class-admin.php';
+	        include_once WP_POPUP_INCLUDES . '/admin/class-metabox.php';
         }
 
 	}
@@ -116,6 +109,9 @@ final class WP_Popup {
 
 		//action_links
 		add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), [ $this, 'plugin_action_links' ] );
+
+		register_activation_hook( __FILE__, [ 'WP_Popup_Install', 'activate' ] );
+
 	}
 
 	function localization_setup() {

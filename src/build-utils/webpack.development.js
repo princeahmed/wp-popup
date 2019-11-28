@@ -50,12 +50,16 @@ module.exports = () => ({
                 {
                     copy: [
                         {
-                            source: './src/vendor/grapes/grapes.min.css',
+                            source: './src/vendor/grapesjs/grapes.min.css',
                             destination: './assets/css/grapes.min.css'
                         },
                         {
-                            source: './src/vendor/grapes/grapes.min.js',
+                            source: './src/vendor/grapesjs/grapes.min.js',
                             destination: './assets/js/grapes.min.js'
+                        },
+                        {
+                            source: './src/vendor/grapesjs/grapesjs-preset-webpage.min.js',
+                            destination: './assets/js/grapesjs-preset-webpage.min.js'
                         },
                         {
                             source: './src/vendor/font-awesome/css/font-awesome.min.css',
